@@ -9,33 +9,68 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📰 News Portal</h1>
+            <div class="logo">
+                <div class="logo-icon">NP</div>
+                <div class="logo-text">
+                    <h1>News Portal</h1>
+                    <span class="tagline">Your daily dose of news</span>
+                </div>
+            </div>
             <div class="user-info">
+                <div class="user-avatar" id="userAvatar"></div>
                 <span id="userInfo"></span>
-                <a href="news-list.html" class="btn btn-secondary">Back to List</a>
+                <a href="news-list.html" class="btn btn-outline">← Back to News</a>
             </div>
         </div>
 
-        <div id="newsDetail" class="news-detail">
-            <p class="loading">Loading...</p>
+        <div class="article-layout">
+            <article class="article-container">
+                <div id="newsDetail" class="article-content">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Loading article...</p>
+                    </div>
+                </div>
+            </article>
+
+            <aside class="article-sidebar">
+                <div class="sidebar-card" id="authorCard">
+                    <h3>✍️ About Author</h3>
+                    <div class="author-profile" id="authorProfile"></div>
+                </div>
+            </aside>
         </div>
 
-        <div id="commentsSection" class="comments-section">
-            <h3>Comments</h3>
-            <div id="commentsList"></div>
-            
-            <form id="commentForm" class="comment-form">
-                <h4>Add a Comment</h4>
-                <textarea id="commentText" placeholder="Write your comment..." rows="3" required></textarea>
-                <button type="submit" class="btn btn-primary">Post Comment</button>
-            </form>
-        </div>
+        <section class="comments-container">
+            <div class="comments-header">
+                <h3>💬 Discussion</h3>
+                <span class="comment-count-badge" id="commentCountBadge">0 comments</span>
+            </div>
+
+            <div class="comment-form-card">
+                <div class="comment-form-header">
+                    <div class="user-avatar small" id="commentAvatar"></div>
+                    <span>Comment as <strong id="commentAsName"></strong></span>
+                </div>
+                <form id="commentForm">
+                    <textarea id="commentText" placeholder="Share your thoughts..." rows="3" required></textarea>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="commentsList" class="comments-list"></div>
+        </section>
     </div>
     <script src="app.js"></script>
     <script>
         checkAuth();
         const currentUser = getCurrentUser();
-        document.getElementById('userInfo').textContent = `Logged in as: ${currentUser.name}`;
+        document.getElementById('userInfo').textContent = currentUser.name;
+        document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+        document.getElementById('commentAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+        document.getElementById('commentAsName').textContent = currentUser.name;
 
         const newsId = new URLSearchParams(window.location.search).get('id');
         let newsData = null;
@@ -52,48 +87,102 @@
                 displayComments(newsData.comments, users);
             } catch (error) {
                 console.error('Error loading news:', error);
-                document.getElementById('newsDetail').innerHTML = '<p class="error">Failed to load news.</p>';
+                document.getElementById('newsDetail').innerHTML = '<p class="error">Failed to load article.</p>';
             }
         }
 
         function displayNewsDetail(news, users) {
             const author = users.find(u => u.id === news.author_id);
             const container = document.getElementById('newsDetail');
-            
+            const initial = author ? author.name.charAt(0).toUpperCase() : '?';
+            const commentCount = news.comments ? news.comments.length : 0;
+
             container.innerHTML = `
-                <h2>${escapeHtml(news.title)}</h2>
-                <p class="author">By: ${author ? author.name : 'Unknown'}</p>
-                <div class="news-body">${escapeHtml(news.body)}</div>
+                <header class="article-header">
+                    <h1 class="article-title">${escapeHtml(news.title)}</h1>
+                    <div class="article-meta">
+                        <div class="author-info">
+                            <div class="author-avatar">${initial}</div>
+                            <div class="author-details">
+                                <span class="author-name">${author ? author.name : 'Unknown'}</span>
+                                <span class="article-stats">📖 Article • 💬 ${commentCount} comments</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <div class="article-body">
+                    ${escapeHtml(news.body).split('\n').map(p => `<p>${p}</p>`).join('')}
+                </div>
             `;
+
+            // Update author sidebar
+            document.getElementById('authorProfile').innerHTML = `
+                <div class="author-avatar large">${initial}</div>
+                <div class="author-name">${author ? author.name : 'Unknown'}</div>
+                <div class="author-email">${author ? author.email : ''}</div>
+            `;
+
+            document.getElementById('commentCountBadge').textContent = `${commentCount} comment${commentCount !== 1 ? 's' : ''}`;
         }
 
         function displayComments(comments, users) {
             const container = document.getElementById('commentsList');
             
             if (!comments || comments.length === 0) {
-                container.innerHTML = '<p class="empty">No comments yet. Be the first to comment!</p>';
+                container.innerHTML = `
+                    <div class="empty-comments">
+                        <span class="empty-icon">💭</span>
+                        <p>No comments yet</p>
+                        <span class="empty-sub">Be the first to share your thoughts!</span>
+                    </div>
+                `;
                 return;
             }
 
             container.innerHTML = '';
-            comments.forEach(comment => {
+            comments.forEach((comment, index) => {
                 const commenter = users.find(u => u.id === comment.user_id);
+                const initial = commenter ? commenter.name.charAt(0).toUpperCase() : '?';
+                const isOwn = comment.user_id === currentUser.id;
+                const timeAgo = getTimeAgo(new Date(comment.timestamp));
+
                 const commentDiv = document.createElement('div');
-                commentDiv.className = 'comment';
+                commentDiv.className = `comment-card ${isOwn ? 'own-comment' : ''}`;
+                commentDiv.style.animationDelay = `${index * 0.1}s`;
                 commentDiv.innerHTML = `
-                    <p class="comment-author">${commenter ? commenter.name : 'Unknown'}</p>
-                    <p class="comment-text">${escapeHtml(comment.text)}</p>
-                    <p class="comment-time">${new Date(comment.timestamp).toLocaleString()}</p>
+                    <div class="comment-header">
+                        <div class="commenter-info">
+                            <div class="author-avatar small">${initial}</div>
+                            <div class="commenter-details">
+                                <span class="commenter-name">${commenter ? commenter.name : 'Unknown'}${isOwn ? ' <span class="you-badge">You</span>' : ''}</span>
+                                <span class="comment-time">${timeAgo}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comment-body">
+                        <p>${escapeHtml(comment.text)}</p>
+                    </div>
                 `;
                 container.appendChild(commentDiv);
             });
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'Just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            if (days < 7) return `${days}d ago`;
+            return date.toLocaleDateString();
         }
 
         document.getElementById('commentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const commentText = document.getElementById('commentText').value.trim();
-            
             if (!commentText) {
                 alert('Comment cannot be empty');
                 return;
@@ -111,15 +200,10 @@
             try {
                 await fetch(`http://localhost:3000/news/${newsId}`, {
                     method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        comments: updatedComments
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comments: updatedComments })
                 });
 
-                alert('Comment added successfully!');
                 document.getElementById('commentText').value = '';
                 loadNewsDetail();
             } catch (error) {

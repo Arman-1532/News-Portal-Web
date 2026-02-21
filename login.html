@@ -30,7 +30,7 @@
                 const response = await fetch('http://localhost:3000/users');
                 const users = await response.json();
                 const select = document.getElementById('userSelect');
-                
+
                 users.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.id;
@@ -46,16 +46,16 @@
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const userId = document.getElementById('userSelect').value;
-            
+
             if (userId) {
                 const select = document.getElementById('userSelect');
                 const userName = select.options[select.selectedIndex].text;
-                
+
                 localStorage.setItem('currentUser', JSON.stringify({
                     id: parseInt(userId),
                     name: userName
                 }));
-                
+
                 window.location.href = 'news-list.html';
             }
         });

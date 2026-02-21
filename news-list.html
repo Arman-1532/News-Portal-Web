@@ -9,27 +9,52 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📰 News Portal</h1>
+            <div class="logo">
+                <div class="logo-icon">NP</div>
+                <div class="logo-text">
+                    <h1>News Portal</h1>
+                    <span class="tagline">Your daily dose of news</span>
+                </div>
+            </div>
             <div class="user-info">
+                <div class="user-avatar" id="userAvatar"></div>
                 <span id="userInfo"></span>
-                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                <button onclick="logout()" class="btn btn-outline">Logout</button>
             </div>
         </div>
 
-        <div class="actions">
-            <a href="create-news.html" class="btn btn-primary">➕ Create News</a>
-            <input type="text" id="searchInput" placeholder="🔍 Search news by title..." class="search-input">
-        </div>
+        <div class="main-layout">
+            <aside class="sidebar">
+                <div class="sidebar-card">
+                    <h3>📝 Actions</h3>
+                    <a href="create-news.html" class="btn btn-primary btn-block">➕ Create News</a>
+                </div>
+                <div class="sidebar-card">
+                    <h3>🔍 Search</h3>
+                    <input type="text" id="searchInput" placeholder="Search news..." class="search-input">
+                </div>
+            </aside>
 
-        <div id="newsContainer" class="news-list">
-            <p class="loading">Loading news...</p>
+            <main class="content">
+                <div class="section-header">
+                    <h2>📰 Latest News</h2>
+                    <span class="news-count" id="newsCount"></span>
+                </div>
+                <div id="newsContainer" class="news-grid">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Loading news...</p>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
     <script src="app.js"></script>
     <script>
         checkAuth();
         const currentUser = getCurrentUser();
-        document.getElementById('userInfo').textContent = `Logged in as: ${currentUser.name}`;
+        document.getElementById('userInfo').textContent = currentUser.name;
+        document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
 
         let allNews = [];
 
@@ -46,13 +71,13 @@
 
         async function displayNews(newsList) {
             const container = document.getElementById('newsContainer');
-            
+            document.getElementById('newsCount').textContent = `${newsList.length} article${newsList.length !== 1 ? 's' : ''}`;
+
             if (newsList.length === 0) {
-                container.innerHTML = '<p class="empty">No news found.</p>';
+                container.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>No news found</p></div>';
                 return;
             }
 
-            // Fetch all users for author names
             const usersResponse = await fetch('http://localhost:3000/users');
             const users = await usersResponse.json();
 
@@ -61,20 +86,37 @@
             for (const news of newsList) {
                 const author = users.find(u => u.id === news.author_id);
                 const commentCount = news.comments ? news.comments.length : 0;
-                
-                const card = document.createElement('div');
+                const initial = author ? author.name.charAt(0).toUpperCase() : '?';
+                const previewText = news.body.length > 120 ? news.body.substring(0, 120) + '...' : news.body;
+
+                const card = document.createElement('article');
                 card.className = 'news-card';
                 card.innerHTML = `
-                    <h3>${escapeHtml(news.title)}</h3>
-                    <p class="author">By: ${author ? author.name : 'Unknown'}</p>
-                    <p class="preview">${escapeHtml(news.body.substring(0, 150))}...</p>
-                    <div class="comment-count">💬 ${commentCount} comment${commentCount !== 1 ? 's' : ''}</div>
-                    <div class="news-actions">
-                        <a href="news-detail.html?id=${news.id}" class="btn btn-primary">View Details</a>
-                        ${news.author_id === currentUser.id ? `
-                            <a href="edit-news.html?id=${news.id}" class="btn btn-secondary">Edit</a>
-                            <button onclick="deleteNews(${news.id})" class="btn btn-danger">Delete</button>
-                        ` : ''}
+                    <div class="card-header">
+                        <div class="author-info">
+                            <div class="author-avatar">${initial}</div>
+                            <div class="author-details">
+                                <span class="author-name">${author ? author.name : 'Unknown'}</span>
+                                <span class="post-date">Author</span>
+                            </div>
+                        </div>
+                        ${news.author_id === currentUser.id ? '<span class="own-badge">Your Post</span>' : ''}
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">${escapeHtml(news.title)}</h3>
+                        <p class="card-preview">${escapeHtml(previewText)}</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="card-stats">
+                            <span class="stat">💬 ${commentCount}</span>
+                        </div>
+                        <div class="card-actions">
+                            <a href="news-detail.html?id=${news.id}" class="btn btn-primary btn-sm">Read More</a>
+                            ${news.author_id === currentUser.id ? `
+                                <a href="edit-news.html?id=${news.id}" class="btn btn-outline btn-sm">Edit</a>
+                                <button onclick="deleteNews(${news.id})" class="btn btn-danger btn-sm">Delete</button>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -85,9 +127,7 @@
             if (!confirm('Are you sure you want to delete this news?')) return;
 
             try {
-                await fetch(`http://localhost:3000/news/${id}`, {
-                    method: 'DELETE'
-                });
+                await fetch(`http://localhost:3000/news/${id}`, { method: 'DELETE' });
                 alert('News deleted successfully!');
                 loadNews();
             } catch (error) {
@@ -96,11 +136,11 @@
             }
         }
 
-
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
             const filtered = allNews.filter(news => 
-                news.title.toLowerCase().includes(searchTerm)
+                news.title.toLowerCase().includes(searchTerm) ||
+                news.body.toLowerCase().includes(searchTerm)
             );
             displayNews(filtered);
         });

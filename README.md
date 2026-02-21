@@ -1,59 +1,38 @@
 # News Portal
 
-A simple news portal application with JSON-Server backend.
+A simple news portal demo that uses json-server and Express to serve static pages and a small JSON-based API (see `db.json`).
 
-## Features
-- User authentication
-- Create, read, update, and delete news articles
-- Comment on news articles
-- Responsive design
+## Screenshots
 
-## Prerequisites
-- Node.js installed on your system
+Below are screenshots illustrating the main pages and features of the project.
 
-## Getting Started
+### Login Page
+![Login Page](./images_for_readme/login_page.png)
+*Login screen for the news portal.*
 
-### 1. Install Dependencies
-```bash
-npm install
-```
+### News List (Feed)
+![News List](./images_for_readme/news_list.png)
+*List of news items (feed).*
 
-### 2. Start the Server
-```bash
-npm start
-```
+### Search News
+![Search News](./images_for_readme/search_news.png)
+*Search interface for finding news items.*
 
-This will start the JSON-Server on `http://localhost:3000`
+### News Details
+![News Details](./images_for_readme/news_details.png)
+*Detail view for a single news article.*
 
-### 3. Open the Application
-Open your browser and navigate to:
-```
-http://localhost:3000/index.html
-```
+### Comment on News
+![Comment on News](./images_for_readme/comment_on_news.png)
+*Adding and viewing comments on a news item.*
 
-Or open the `index.html` file directly in your browser while the server is running.
+### Create News
+![Create News](./images_for_readme/create_news.png)
+*Form to create a new news item.*
 
-## Available Users
-The application comes with pre-configured test users:
-- Alice Rahman (alice@example.com)
-- Karim Hossain (karim@example.com)
-- Nusrat Jahan (nusrat@example.com)
+### Feed Update 
+![Feed Update](./images_for_readme/news_feed_update.png)
+*Example of the feed update after adding a new news.*
 
-## Project Structure
-- `index.html` - Landing page (redirects to login or news list)
-- `login.html` - User login page
-- `news-list.html` - Display all news articles
-- `news-detail.html` - View individual news article with comments
-- `create-news.html` - Create new news article
-- `edit-news.html` - Edit existing news article
-- `app.js` - Main JavaScript functionality
-- `styles.css` - Application styles
-- `db.json` - JSON-Server database
+---
 
-## API Endpoints
-- GET `/users` - Get all users
-- GET `/news` - Get all news articles
-- GET `/news/:id` - Get specific news article
-- POST `/news` - Create new news article
-- PUT `/news/:id` - Update news article
-- DELETE `/news/:id` - Delete news article
